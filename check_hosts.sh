@@ -1,21 +1,19 @@
 #!/bin/bash
 
-cat /etc/hosts | while read ip_local nume_host aliasuri; do
+validate_ip() {
+	local host=$1
+	local ip=$2
+	local dns_server=$3
 
-	if [[ -z "$ip_local" ]] || [[ "$ip_local" == \#* ]]; then
+	if ! nslookup "$host" "$dns_server" 2>/dev/null | grep -q "$ip"; then
+		echo "Bogus IP for $host in /etc/hosts!"
+	fi
+}
+
+cat /etc/hosts | while read ip name alias; do
+	if [[ -z "$ip" ]] || [[ "$ip" == \#* ]] || [[ "$ip" == *:* ]] || [[ "$name" == *"local"* ]]; then
 		continue
 	fi
 
-	if [[ "$ip_local" == *:* ]]; then
-		continue
-	fi
-
-	if [[ "$nume_host" == *"local"* ]]; then
-        	continue
-   	 fi
-
-	if ! nslookup "$nume_host" 8.8.8.8  2>/dev/null | grep -q "$ip_local"; then
-		echo "Bogus ID for $nume_host in /etc/hosts"
-	fi
-
+	validate_ip "$name" "$ip" "8.8.8.8"
 done
